@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme.dart';
+import '../../home/cubit/home_cubit.dart';
 import '../../home/screens/home_screen.dart';
 import '../../cart/screens/cart_screen.dart';
+import '../../home/service/home_service.dart';
 import '../../profile/screens/profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -13,15 +17,28 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const CartScreen(),
-    const ProfileScreen(),
-  ];
+  late final HomeService homeService;
+  late final HomeCubit homeCubit;
+  late final ApiClient apiClient;
+  @override
+  void initState() {
+    super.initState();
+    apiClient = ApiClient();
+    homeService = HomeService(apiClient);
+    homeCubit = HomeCubit(homeService);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> _screens = [
+      BlocProvider(
+          create: (BuildContext context) {
+            return homeCubit;
+          },
+          child: const HomeScreen()),
+      const CartScreen(),
+      const ProfileScreen(),
+    ];
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
