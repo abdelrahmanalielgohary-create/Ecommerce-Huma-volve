@@ -1,11 +1,13 @@
+import 'package:ecommerce_app_huma_volve/core/dummy_data.dart';
+import 'package:ecommerce_app_huma_volve/core/theme.dart';
+import 'package:ecommerce_app_huma_volve/features/home/presentation/cubit/categories/categories_cubit.dart';
+import 'package:ecommerce_app_huma_volve/features/home/presentation/cubit/products/product_cubit.dart';
 import 'package:flutter/material.dart';
+
+import '../widgets/product_card.dart';
+import '../widgets/category_chip.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/dummy_data.dart';
-import '../../../../core/theme.dart';
-import '../cubit/home_cubit.dart';
-import '../cubit/home_states.dart';
-import 'widgets/category_chip.dart';
-import 'widgets/product_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,11 +18,44 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategoryIndex = 0;
-
+  bool _didLoadInitialProducts = false;
+  bool _isLoadingMore = false;
+  int? _selectedCategoryId;
+  late final ScrollController scrollController;
   @override
   void initState() {
     super.initState();
-    context.read<HomeCubit>().loadHomeData();
+    context.read<CategoriesCubit>().getCategories();
+    scrollController = ScrollController();
+    scrollController.addListener(_loadMore);
+  }
+
+  void _loadMore() {
+    if (!scrollController.hasClients || _selectedCategoryId == null) return;
+    final position = scrollController.position;
+    const trigger = 200.0;
+    if (position.extentAfter <= trigger && !_isLoadingMore) {
+      _loadMoreProducts();
+    }
+  }
+
+  Future<void> _loadMoreProducts() async {
+    final categoryId = _selectedCategoryId;
+    if (categoryId == null || _isLoadingMore) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      await context.read<ProductCubit>().loadMoreProducts(categoryId);
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    scrollController
+      ..removeListener(_loadMore)
+      ..dispose();
+    super.dispose();
   }
 
   @override
@@ -29,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppTheme.background,
       body: SafeArea(
         child: CustomScrollView(
+          controller: scrollController,
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
@@ -76,12 +112,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 32),
                     Text(
                       'Explore',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 36),
+                      style: Theme.of(context).textTheme.displayLarge
+                          ?.copyWith(fontSize: 36),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Best trendy collection!',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 18),
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(fontSize: 18),
                     ),
                     const SizedBox(height: 32),
                     Container(
@@ -122,88 +160,106 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    BlocBuilder<HomeCubit, HomeStates>(
-                      buildWhen: (previous, current) {
-                        if (current is ProductsSuccess ||
-                            current is ProductsError ||
-                            current is ProductsLoading) {
-                          return false;
+                    BlocConsumer<CategoriesCubit, CategoriesState>(
+                      listener: (context, state) {
+                        if (state is CategoriesCubitSuccess &&
+                            !_didLoadInitialProducts &&
+                            state.data.isNotEmpty) {
+                          _didLoadInitialProducts = true;
+                          final categoryId = state.data.first.id;
+                          if (categoryId != null) {
+                            _selectedCategoryId = categoryId;
+                            context.read<ProductCubit>().getProducts(categoryId);
+                          }
                         }
-                        return true;
                       },
                       builder: (context, state) {
-                        if (state is CategoriesLoading) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        } else if (state is CategoriesError) {
-                          return Center(child: Text(state.errorMessage));
-                        } else if (state is CategoriesSuccess) {
-                          final categories = state.categories;
-                          return SizedBox(
-                            height: 44,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: categories.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(width: 12),
-                              itemBuilder: (context, index) {
-                                final category = categories[index];
-                                return CategoryChip(
-                                  label: category.name ?? "all",
-                                  isSelected: _selectedCategoryIndex == index,
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedCategoryIndex = index;
-                                    });
-                                    if (category.id != null) {
-                                      context.read<HomeCubit>().getProductByCategoryId(category.id!);
-                                    }
-                                  },
-                                );
-                              },
-                            ),
-                          );
+                        switch (state) {
+                          case CategoriesCubitInitial():
+                          case CategoriesCubitLoading():
+                            return Center(child: CircularProgressIndicator());
+                          case CategoriesCubitFailure():
+                            return Center(child: Text(state.errorMessage));
+                          case CategoriesCubitSuccess():
+                            final categories = state.data;
+                            if (categories.isEmpty) {
+                              return const Center(child: Text('No categories found'));
+                            }
+                            return SizedBox(
+                              height: 44,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: categories.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(width: 12),
+                                itemBuilder: (context, index) {
+                                  return CategoryChip(
+                                    label: categories[index].name ?? "Unkown",
+                                    isSelected: _selectedCategoryIndex == index,
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedCategoryIndex = index;
+                                        _selectedCategoryId = categories[index].id;
+                                      });
+                                      final categoryId = categories[index].id;
+                                      if (categoryId != null) {
+                                        context.read<ProductCubit>().getProducts(categoryId);
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                            );
                         }
-                        return const SizedBox.shrink();
                       },
                     ),
                   ],
                 ),
               ),
             ),
-            BlocBuilder<HomeCubit, HomeStates>(
+            BlocBuilder<ProductCubit, ProductState>(
               builder: (context, state) {
-                if (state is ProductsLoading) {
-                  return const SliverToBoxAdapter(
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                } else if (state is ProductsError) {
-                  return SliverToBoxAdapter(child: Center(child: Text(state.errorMessage)));
-                } else if (state is ProductsSuccess) {
-                  return SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.65,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
+                switch (state) {
+                  case ProductCubitInitial():
+                    return SliverToBoxAdapter(
+                      child: SizedBox.shrink()
+                    );
+                  case ProductCubitLoading():
+                    return SliverToBoxAdapter(
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  case ProductCubitFailure():
+                    return SliverToBoxAdapter(
+                      child: Center(child: Text(state.errorMessage,style: TextStyle(color: Colors.red),)),
+                    );
+                  case ProductCubitSuccess():
+                    final products = state.data;
+                    return SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.7,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                            ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => ProductCard(product: products[index]),
+                          childCount: products.length,
+                        ),
                       ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return ProductCard(product: state.products[index]);
-                        },
-                        childCount: state.products.length,
-                      ),
-                    ),
-                  );
+                    );
                 }
-                return const SliverToBoxAdapter(child: SizedBox.shrink());
               },
             ),
+            if (_isLoadingMore)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
@@ -211,3 +267,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+// SliverPadding(
+//               padding: const EdgeInsets.symmetric(horizontal: 24),
+//               sliver: SliverGrid(
+//                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+//                   crossAxisCount: 2,
+//                   childAspectRatio: 0.7,
+//                   crossAxisSpacing: 16,
+//                   mainAxisSpacing: 16,
+//                 ),
+//                 delegate: SliverChildBuilderDelegate((context, index) {
+//                   return ProductCard(product: dummyProducts[index]);
+//                 }, childCount: dummyProducts.length),
+//               ),
+//             ),
