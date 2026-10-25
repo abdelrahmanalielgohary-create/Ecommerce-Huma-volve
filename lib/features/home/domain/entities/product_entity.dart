@@ -1,15 +1,17 @@
-import 'category_entity.dart';
+import 'package:ecommerce_app_huma_volve/features/home/domain/entities/category_entity.dart';
 
 class ProductEntity {
-  final int? id;
-  final String? title;
-  final String? slug;
-  final int? price;
-  final String? description;
-  final CategoryEntity? category;
-  final List<String>? images;
+  int? id;
+  String? title;
+  String? slug;
+  int? price;
+  String? description;
+  CategoryEntity? category;
+  List<String>? images;
+  String? creationAt;
+  String? updatedAt;
 
-  const ProductEntity({
+  ProductEntity({
     this.id,
     this.title,
     this.slug,
@@ -17,5 +19,7 @@ class ProductEntity {
     this.description,
     this.category,
     this.images,
+    this.creationAt,
+    this.updatedAt,
   });
 }

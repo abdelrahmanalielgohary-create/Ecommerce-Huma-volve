@@ -1,9 +1,17 @@
 class CategoryEntity {
-  final int? id;
-  final String? name;
+  int? id;
+  String? name;
+  String? slug;
+  String? image;
+  String? creationAt;
+  String? updatedAt;
 
-  const CategoryEntity({
+  CategoryEntity({
     this.id,
     this.name,
+    this.slug,
+    this.image,
+    this.creationAt,
+    this.updatedAt,
   });
 }
