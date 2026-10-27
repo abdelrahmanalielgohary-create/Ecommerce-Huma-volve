@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/dummy_data.dart';
 import '../../../core/theme.dart';
 import '../../home/service/models/product_model.dart';
-import '../widgets/color_selector.dart';
-import '../widgets/size_selector.dart';
+import '../widgets/shared_product_button.dart';
 import '../../../core/widgets/primary_button.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
-final productModel productModels;
+  final productModel productModels;
   const ProductDetailsScreen({super.key, required this.productModels});
 
   @override
@@ -15,16 +13,6 @@ final productModel productModels;
 }
 
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
-  late Color _selectedColor;
-  late String _selectedSize;
-
-  @override
-  void initState() {
-    super.initState();
-    // _selectedColor = widget.productModels.colors.first;
-    // _selectedSize = widget.productModels.sizes.first;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,6 +35,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
+              ShareProductButton(
+                productId: widget.productModels.id?.toString() ?? '1',
+              ),
               IconButton(
                 icon: Container(
                   padding: const EdgeInsets.all(8),
@@ -63,15 +54,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
                 tag: 'product-${widget.productModels.id}',
-                child: Image.network(
-                  widget.productModels.images![0],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: AppTheme.background,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.image_not_supported_outlined),
-                  ),
-                ),
+                child: widget.productModels.images != null && widget.productModels.images!.isNotEmpty
+                    ? Image.network(
+                        widget.productModels.images![0],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppTheme.background,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.image_not_supported_outlined),
+                        ),
+                      )
+                    : Container(
+                        color: AppTheme.background,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.image_not_supported_outlined),
+                      ),
               ),
             ),
           ),
@@ -93,7 +90,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            widget.productModels.title??"",
+                            widget.productModels.title ?? "",
                             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                               fontSize: 28,
                               height: 1.2,
@@ -102,7 +99,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         ),
                         const SizedBox(width: 16),
                         Text(
-                          '\$${widget.productModels.price!.toStringAsFixed(2)}',
+                          '\$${widget.productModels.price?.toStringAsFixed(2) ?? '0.00'}',
                           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                             color: AppTheme.primary,
                             fontSize: 24,
@@ -119,46 +116,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.productModels.description??"",
+                      widget.productModels.description ?? "",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         height: 1.6,
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Select Color',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // ColorSelector(
-                    //   colors: widget.productModels.colors,
-                    //   selectedColor: _selectedColor,
-                    //   onColorSelected: (color) {
-                    //     setState(() {
-                    //       _selectedColor = color;
-                    //     });
-                    //   },
-                    // ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Select Size',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // SizeSelector(
-                    //   sizes: widget.productModels.sizes,
-                    //   selectedSize: _selectedSize,
-                    //   onSizeSelected: (size) {
-                    //     setState(() {
-                    //       _selectedSize = size;
-                    //     });
-                    //   },
-                    // ),
                     const SizedBox(height: 32),
                     PrimaryButton(
                       text: 'Add to Cart',
