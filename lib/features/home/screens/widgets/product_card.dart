@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../../core/dummy_data.dart';
 import '../../../../core/theme.dart';
-import '../../../details/screens/product_details_screen.dart';
 import '../../service/models/product_model.dart';
 
 class ProductCard extends StatelessWidget {
-  // final Product product;
   final productModel productModels;
   const ProductCard({super.key, required this.productModels});
 
@@ -14,17 +12,7 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 500),
-            pageBuilder: (context, animation, secondaryAnimation) => 
-                ProductDetailsScreen(productModels: productModels),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
+        context.push('/product/${productModels.id}', extra: productModels);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -50,14 +38,16 @@ class ProductCard extends StatelessWidget {
                     tag: 'product-${productModels.id}',
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                      child: Image.network(
-                        productModels.images![0],
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const _ImagePlaceholder(),
-                      ),
+                      child: productModels.images != null && productModels.images!.isNotEmpty
+                          ? Image.network(
+                              productModels.images![0],
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const _ImagePlaceholder(),
+                            )
+                          : const _ImagePlaceholder(),
                     ),
                   ),
                   Positioned(
@@ -82,31 +72,36 @@ class ProductCard extends StatelessWidget {
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      productModels.title??"",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        height: 1.2,
+                    Expanded(
+                      child: Text(
+                        productModels.title ?? "",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const Spacer(),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '\$${productModels.price!.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            color: AppTheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                        Flexible(
+                          child: Text(
+                            '\$${productModels.price?.toStringAsFixed(2) ?? "0.00"}',
+                            style: const TextStyle(
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Container(
@@ -139,8 +134,8 @@ class _ImagePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: AppTheme.background,
-    alignment: Alignment.center,
-    child: const Icon(Icons.image_not_supported_outlined, color: AppTheme.textSecondary),
-  );
+        color: AppTheme.background,
+        alignment: Alignment.center,
+        child: const Icon(Icons.image_not_supported_outlined, color: AppTheme.textSecondary),
+      );
 }

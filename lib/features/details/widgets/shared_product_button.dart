@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../home/service/models/product_model.dart';
 
 class ShareProductButton extends StatelessWidget {
-  final String productId;
+  final productModel product;
 
   const ShareProductButton({
     super.key,
-    required this.productId,
+    required this.product,
   });
 
   @override
@@ -21,8 +22,16 @@ class ShareProductButton extends StatelessWidget {
         child: const Icon(Icons.share, size: 18),
       ),
       onPressed: () async {
-        final String productLink = "https://ecommerce.app/product/$productId";
-        final String shareMessage = "Check out this product on Huma-volve: $productLink";
+        final String vercelUrl =
+            "https://rushing-scarlet-lxwsycr.tmp.now/product/${product.id ?? 1}";
+        final String shareMessage = """
+🛍️ *${product.title ?? 'Product'}*
+💰 Price: *\$${product.price?.toStringAsFixed(2) ?? '0.00'}*
+
+${product.description ?? ''}
+
+🔗 View Web Details: $vercelUrl
+""";
         await SharePlus.instance.share(ShareParams(text: shareMessage));
       },
     );

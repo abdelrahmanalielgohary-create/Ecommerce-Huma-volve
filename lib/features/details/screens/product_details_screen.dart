@@ -36,7 +36,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             ),
             actions: [
               ShareProductButton(
-                productId: widget.productModels.id?.toString() ?? '1',
+                product: widget.productModels,
               ),
               IconButton(
                 icon: Container(
