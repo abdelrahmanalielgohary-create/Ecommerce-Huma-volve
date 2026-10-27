@@ -15,7 +15,8 @@ class MyApp extends StatelessWidget {
       title: 'E-Commerce App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      routerConfig: AppRoutes.router,
+      home: const SplashScreen(),
+      // home: const MainNavigationScreen(),
     );
   }
 }

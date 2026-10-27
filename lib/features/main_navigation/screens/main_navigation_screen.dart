@@ -1,12 +1,20 @@
+import 'package:ecommerce_app_huma_volve/core/network/api_client.dart';
+import 'package:ecommerce_app_huma_volve/features/home/data/repos/home_repo_imp.dart';
+import 'package:ecommerce_app_huma_volve/features/home/domain/repos/home_repo.dart';
+import 'package:ecommerce_app_huma_volve/features/home/domain/use_cases/get_categories_use_case.dart';
+import 'package:ecommerce_app_huma_volve/features/home/domain/use_cases/get_products_use_case.dart';
+import 'package:ecommerce_app_huma_volve/features/home/presentation/cubit/categories/categories_cubit.dart';
+import 'package:ecommerce_app_huma_volve/features/home/presentation/cubit/products/product_cubit.dart';
+import 'package:ecommerce_app_huma_volve/features/home/presentation/screens/home_screen.dart';
+import 'package:ecommerce_app_huma_volve/features/home/data/data_source/home_remote_data_source_imp.dart';
+import 'package:ecommerce_app_huma_volve/features/home/data/data_source/home_remote_data_source.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/network/api_client.dart';
+
 import '../../../core/theme.dart';
-import '../../home/cubit/home_cubit.dart';
-import '../../home/screens/home_screen.dart';
 import '../../cart/screens/cart_screen.dart';
-import '../../home/service/home_service.dart';
 import '../../profile/screens/profile_screen.dart';
+
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -17,30 +25,38 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-  late final HomeService homeService;
-  late final HomeCubit homeCubit;
   late final ApiClient apiClient;
+  late final HomeRemoteDataSource homeRemoteDataSource;
+  late final HomeRepo homeRepo;
+  late final GetCategoriesUseCase getCategoriesUseCase;
+  late final GetProductsUseCase getProductsUseCase;
+
   @override
   void initState() {
+    // TODO: implement initState
     super.initState();
     apiClient = ApiClient();
-    homeService = HomeService(apiClient);
-    homeCubit = HomeCubit(homeService);
+    homeRemoteDataSource = HomeRemoteDataSourceImp(apiClient);
+    homeRepo=HomeRepoImp(homeRemoteDataSource);
+    getCategoriesUseCase=GetCategoriesUseCase(homeRepo);
+    getProductsUseCase=GetProductsUseCase(homeRepo);
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _screens = [
-      BlocProvider(
-          create: (BuildContext context) {
-            return homeCubit;
-          },
-          child: const HomeScreen()),
+    final List<Widget> screens = [
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (context) => CategoriesCubit(getCategoriesUseCase)),
+          BlocProvider(create: (context) => ProductCubit(getProductsUseCase)),
+        ],
+        child: HomeScreen(),
+      ),
       const CartScreen(),
       const ProfileScreen(),
     ];
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
