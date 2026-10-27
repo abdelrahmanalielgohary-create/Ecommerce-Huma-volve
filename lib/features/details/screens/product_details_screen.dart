@@ -49,6 +49,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
+              ShareProductButton(
+                productId: widget.productModels.id?.toString() ?? '1',
+              ),
               IconButton(
                 icon: Container(
                   padding: const EdgeInsets.all(8),
